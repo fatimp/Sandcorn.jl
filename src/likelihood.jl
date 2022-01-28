@@ -1,4 +1,6 @@
-corrfn(image :: AbstractArray{Bool}) = Directional.s2(image, false; periodic = true) |> mean
+corrfn(image :: AbstractArray{Bool}) =
+    vcat(Directional.s2(image, false; periodic = true) |> mean,
+         Directional.surfsurf(image, false; periodic = true) |> mean)
 
 function likelihood_point(s  :: AbstractFloat,
                           cs :: AbstractVector{T}) where T <: AbstractFloat
