@@ -8,7 +8,7 @@ function generate_image(size,
         let (μ, σ) = normal_param[1]; Normal(μ, σ) end
     radius_distribution = Truncated(radius_distribution, 0, Inf)
 
-    image     = zeros(Bool, size)
+    image     = zeros(Bool, size) |> BitArray
     cur_pores = prod(size)
     pores     = porosity * cur_pores
 

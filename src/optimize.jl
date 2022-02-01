@@ -9,16 +9,21 @@ function array2params(xs :: AbstractArray{<:AbstractFloat})
     return zip(μs, σs) |> collect
 end
 
-function target_function(image :: AbstractArray{Bool}, ncloud, cutoff)
-    porosity = count(iszero, image) / length(image)
+function target_function(image  :: AbstractArray{Bool},
+                         ncloud :: Integer,
+                         cutoff :: Integer)
+    cf = corrfn(image, cutoff)
 
-    return xs -> -likelihood(image, porosity, array2params(xs), ncloud, cutoff)
+    return xs -> -likelihood(cf, size(image), array2params(xs);
+                             ncloud = ncloud,
+                             cutoff = cutoff)
 end
 
-function sandcorn_parameters(image :: AbstractArray{Bool};
-                             nmodes = 1,
-                             ncloud = 100,
-                             cutoff = 100,
+function sandcorn_parameters(image      :: AbstractArray{Bool};
+                             nmodes     :: Integer = 1,
+                             ncloud     :: Integer = 100,
+                             cutoff     :: Integer = 100,
+                             iterations :: Integer = 15,
                              μ_bounds = (0.0,  40.0),
                              σ_bounds = (1e-3, 10.0))
     μ_lo, μ_hi = μ_bounds
@@ -35,6 +40,8 @@ function sandcorn_parameters(image :: AbstractArray{Bool};
 
     opt = optimize(target_function(image, ncloud, cutoff), start,
                    ParticleSwarm(lower = lower, upper = upper),
-                   Optim.Options(show_trace = true, show_every = 1, iterations = 15))
+                   Optim.Options(show_trace = true,
+                                 show_every = 1,
+                                 iterations = iterations))
     return opt |> Optim.minimizer |> array2params
 end

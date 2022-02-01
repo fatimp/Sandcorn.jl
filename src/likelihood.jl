@@ -1,20 +1,37 @@
-corrfn(image :: AbstractArray{Bool}) =
-    vcat(Directional.s2(image, false; periodic = true) |> mean,
-         Directional.surfsurf(image, false; periodic = true) |> mean)
+# NB: Must return porosity in the first element of the array
+function corrfn(image  :: AbstractArray{Bool},
+                cutoff :: Integer)
+    s2  = Directional.s2(image, false; periodic = true, len = cutoff) |> mean
+    l2v = Directional.l2(image, false; periodic = true, len = cutoff) |> mean
+    l2s = Directional.l2(image, true;  periodic = true, len = cutoff) |> mean
 
-function likelihood_point(s  :: AbstractFloat,
-                          cs :: AbstractVector{<:AbstractFloat})
-    σ = var(cs)
-    μ = mean(cs)
-
-    return log(1/(sqrt(2π * σ))) - (s - μ)^2/(2σ)
+    return vcat(s2, l2v, l2s)
 end
 
-function likelihood(image :: AbstractArray{Bool}, porosity, params, ncloud, cutoff = typemax(Int))
-    cloud = reduce(hcat, (generate_image(size(image), porosity, params) |> corrfn for _ in 1:ncloud))
-    cf    = corrfn(image)
+function likelihood_point(x  :: AbstractFloat,
+                          xs :: AbstractVector{<:AbstractFloat})
+    σ = var(xs)
+    μ = mean(xs)
 
-    len = min(cutoff, length(cf))
-    res = sum(likelihood_point(cf[n], cloud[n, :]) for n in 1:len)
+    return -log(sqrt(2π * σ)) - (x - μ)^2/(2σ)
+end
+
+function likelihood(cf, image_size, params :: AbstractVector{Tuple{T, T}};
+                    ncloud :: Integer = 100,
+                    cutoff :: Integer = typemax(Int)) where T <: AbstractFloat
+    cloud = mapreduce(vcat, 1:ncloud) do _
+        corrfn(generate_image(image_size, cf[1], params), cutoff)'
+    end
+
+    cloud_points = (cloud[:, n] for n in 1:size(cloud, 2))
+    res = sum(likelihood_point(x, xs) for (x, xs) in zip(cf, cloud_points))
     return isnan(res) ? -Inf : res
 end
+
+likelihood(image  :: AbstractArray{Bool},
+           params :: AbstractVector{Tuple{T, T}};
+           ncloud :: Integer = 100,
+           cutoff :: Integer = typemax(Int)) where T <: AbstractFloat =
+               likelihood(corrfn(image, cutoff), size(image), params;
+                          ncloud = ncloud,
+                          cutoff = cutoff)
