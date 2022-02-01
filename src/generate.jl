@@ -1,9 +1,14 @@
 function generate_image(size,
-                        porosity :: AbstractFloat,
-                        μ        :: AbstractFloat,
-                        σ        :: AbstractFloat)
-    radius_distribution = Truncated(Normal(μ, σ), 0, Inf)
-    image  = zeros(Bool, size)
+                        porosity     :: AbstractFloat,
+                        normal_param :: AbstractVector{Tuple{T, T}}) where T <: AbstractFloat
+    # Truncated + MixtureModel do not work with one unique set of parameters
+    normal_param = unique(normal_param)
+    radius_distribution = length(normal_param) > 1 ?
+        MixtureModel(Normal, normal_param) :
+        let (μ, σ) = normal_param[1]; Normal(μ, σ) end
+    radius_distribution = Truncated(radius_distribution, 0, Inf)
+
+    image     = zeros(Bool, size)
     cur_pores = prod(size)
     pores     = porosity * cur_pores
 
