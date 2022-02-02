@@ -9,6 +9,6 @@ include("generate.jl")
 include("likelihood.jl")
 include("optimize.jl")
 
-export generate_image, likelihood, sandcorn_parameters
+export generate_image, sandcorn_parameters
 
 end # module

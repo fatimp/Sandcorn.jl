@@ -19,6 +19,22 @@ function target_function(image  :: AbstractArray{Bool},
                              cutoff = cutoff)
 end
 
+"""
+~~~~
+sandcorn_parameters(image; nmodes     = 1,
+                           ncloud     = 100,
+                           cutoff     = 100,
+                           iterations = 15,
+                           μ_bounds   = (0.0,  40.0),
+                           σ_bounds   = (1e-3, 10.0))
+~~~~
+
+Find a distribution of radii in an image which consists of partially
+overlapping grains (like an slice of a sandstone). `nmodes` is an
+assumed number of modes in the distribution. The resulting
+distribution can be constructed as
+`Truncated(MixtureModel(Normal, sandcorn_parameters(…)), 0, Inf)`.
+"""
 function sandcorn_parameters(image      :: AbstractArray{Bool};
                              nmodes     :: Integer = 1,
                              ncloud     :: Integer = 100,

@@ -3,6 +3,14 @@ function rand_non_negative(distribution)
     return r < 0 ? rand_non_negative(distribution) : r
 end
 
+"""
+    generate_image(size, porosity, normal_param)
+
+Generate an image of overlapping `n`-dimensional balls with radii
+sampled from a truncated mixture of normal distributions with
+parameters `normal_param` in the form of `[(μ₀, σ₀), (μ₁, σ₁),
+…]`. The image is generated with specified `size` and `porosity`.
+"""
 function generate_image(size,
                         porosity     :: AbstractFloat,
                         normal_param :: AbstractVector{Tuple{T, T}}) where T <: AbstractFloat
