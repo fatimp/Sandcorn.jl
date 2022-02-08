@@ -13,8 +13,9 @@ function target_function(image  :: AbstractArray{Bool},
                          ncloud :: Integer,
                          cutoff :: Integer)
     cf = corrfn(image, cutoff)
+    p  = porosity(image)
 
-    return xs -> -likelihood(cf, size(image), array2params(xs);
+    return xs -> -likelihood(cf, p, size(image), array2params(xs);
                              ncloud = ncloud,
                              cutoff = cutoff)
 end
