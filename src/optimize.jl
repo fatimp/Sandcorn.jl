@@ -2,12 +2,15 @@ line(x0, x1, x) = x0 + (x1-x0)*x
 
 function array2dist(xs :: AbstractArray{<:AbstractFloat})
     len = length(xs)
-    @assert len |> iseven
+    @assert mod(len, 3) |> iszero
 
-    μs = xs[begin:len÷2]
-    σs = xs[len÷2 + 1:end]
+    nmodes = len÷3
+    μs = xs[begin:nmodes]
+    σs = xs[nmodes+1:2nmodes]
+    ws = xs[2nmodes+1:end]
+    ws = ws ./ sum(ws)
 
-    return truncated(MixtureModel(Normal, collect(zip(μs, σs))), 0, Inf)
+    return truncated(MixtureModel(Normal, zip(μs, σs) |> collect, ws), 0, Inf)
 end
 
 function target_function(image  :: AbstractArray{Bool},
@@ -27,7 +30,8 @@ sandcorn_parameters(image; nmodes     = 1,
                            cutoff     = 100,
                            iterations = 15,
                            μ_bounds   = (0.0,  40.0),
-                           σ_bounds   = (1e-3, 10.0))
+                           σ_bounds   = (1e-3, 10.0),
+                           w_bounds   = (0.05, 1.0))
 ~~~~
 
 Find a distribution of radii in an image which consists of partially
@@ -42,18 +46,22 @@ function sandcorn_parameters(image      :: AbstractArray{Bool};
                              cutoff     :: Integer = 100,
                              iterations :: Integer = 15,
                              μ_bounds = (0.0,  40.0),
-                             σ_bounds = (1e-3, 10.0))
+                             σ_bounds = (1e-3, 10.0),
+                             w_bounds = (0.05, 1.0))
     μ_lo, μ_hi = μ_bounds
     σ_lo, σ_hi = σ_bounds
+    w_lo, w_hi = w_bounds
 
     μ_lower = fill(μ_lo, nmodes)
     σ_lower = fill(σ_lo, nmodes)
+    w_lower = fill(w_lo, nmodes)
     μ_upper = fill(μ_hi, nmodes)
     σ_upper = fill(σ_hi, nmodes)
+    w_upper = fill(w_hi, nmodes)
 
-    lower = vcat(μ_lower, σ_lower)
-    upper = vcat(μ_upper, σ_upper)
-    start = line.(lower, upper, rand(Float64, 2nmodes))
+    lower = vcat(μ_lower, σ_lower, w_lower)
+    upper = vcat(μ_upper, σ_upper, w_upper)
+    start = line.(lower, upper, rand(Float64, 3nmodes))
 
     opt = optimize(target_function(image, ncloud, cutoff), start,
                    ParticleSwarm(lower = lower, upper = upper),
