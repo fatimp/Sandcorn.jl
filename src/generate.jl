@@ -1,16 +1,13 @@
 """
-    generate_image(size, porosity, normal_param)
+    generate_image(size, porosity, distribution)
 
 Generate an image of overlapping `n`-dimensional balls with radii
-sampled from a truncated mixture of normal distributions with
-parameters `normal_param` in the form of `[(μ₀, σ₀), (μ₁, σ₁),
-…]`. The image is generated with specified `size` and `porosity`.
+sampled from `distribution`. The image is generated with specified
+`size` and `porosity`.
 """
 function generate_image(size,
                         porosity     :: AbstractFloat,
-                        normal_param :: AbstractVector{Tuple{T, T}}) where T <: AbstractFloat
-    radius_distribution = truncated(MixtureModel(Normal, normal_param), 0, Inf)
-
+                        distribution :: Distribution)
     image     = zeros(Bool, size) |> BitArray
     cur_pores = prod(size)
     pores     = porosity * cur_pores
@@ -20,7 +17,7 @@ function generate_image(size,
     uidx       = oneunit(fidx)
 
     while true
-        radius  = rand(radius_distribution)
+        radius  = rand(distribution)
         iradius = radius |> ceil |> Int
         center  = rand(indices)
 

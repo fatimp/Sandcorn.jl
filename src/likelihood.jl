@@ -14,22 +14,24 @@ function likelihood_point(x  :: AbstractFloat,
     return -log(sqrt(2π * σ)) - (x - μ)^2/(2σ)
 end
 
-function likelihood(cf, porosity, image_size, params :: AbstractVector{Tuple{T, T}};
-                    ncloud :: Integer = 100,
-                    cutoff :: Integer = typemax(Int)) where T <: AbstractFloat
+function likelihood(cf, size,
+                    porosity   :: AbstractFloat,
+                    dist       :: Distribution;
+                    ncloud     :: Integer = 100)
+    cutoff = length(cf)
     cloud = mapreduce(vcat, 1:ncloud) do _
-        corrfn(generate_image(image_size, porosity, params), cutoff)'
+        corrfn(generate_image(size, porosity, dist), cutoff)'
     end
 
-    cloud_points = (cloud[:, n] for n in 1:size(cloud, 2))
+    cloud_points = (cloud[:, n] for n in 1:cutoff)
     res = sum(likelihood_point(x, xs) for (x, xs) in zip(cf, cloud_points))
     return isnan(res) ? -Inf : res
 end
 
-likelihood(image  :: AbstractArray{Bool},
-           params :: AbstractVector{Tuple{T, T}};
-           ncloud :: Integer = 100,
-           cutoff :: Integer = typemax(Int)) where T <: AbstractFloat =
-               likelihood(corrfn(image, cutoff), porosity(image), size(image), params;
-                          ncloud = ncloud,
-                          cutoff = cutoff)
+function likelihood(image  :: AbstractArray{Bool},
+                    dist   :: Distribution;
+                    ncloud :: Integer = 100,
+                    cutoff :: Integer = typemax(Int))
+    likelihood(corrfn(image, cutoff), size(image), porosity(image), dist;
+               ncloud = ncloud)
+end

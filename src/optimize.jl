@@ -1,12 +1,13 @@
 line(x0, x1, x) = x0 + (x1-x0)*x
 
-function array2params(xs :: AbstractArray{<:AbstractFloat})
+function array2dist(xs :: AbstractArray{<:AbstractFloat})
     len = length(xs)
     @assert len |> iseven
 
     μs = xs[begin:len÷2]
     σs = xs[len÷2 + 1:end]
-    return zip(μs, σs) |> collect
+
+    return truncated(MixtureModel(Normal, collect(zip(μs, σs))), 0, Inf)
 end
 
 function target_function(image  :: AbstractArray{Bool},
@@ -14,10 +15,9 @@ function target_function(image  :: AbstractArray{Bool},
                          cutoff :: Integer)
     cf = corrfn(image, cutoff)
     p  = porosity(image)
+    s  = size(image)
 
-    return xs -> -likelihood(cf, p, size(image), array2params(xs);
-                             ncloud = ncloud,
-                             cutoff = cutoff)
+    return xs -> -likelihood(cf, s, p, array2dist(xs); ncloud = ncloud)
 end
 
 """
@@ -60,5 +60,5 @@ function sandcorn_parameters(image      :: AbstractArray{Bool};
                    Optim.Options(show_trace = true,
                                  show_every = 1,
                                  iterations = iterations))
-    return opt |> Optim.minimizer |> array2params
+    return opt |> Optim.minimizer |> array2dist
 end
