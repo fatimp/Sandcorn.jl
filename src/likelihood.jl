@@ -3,11 +3,7 @@ porosity(image :: AbstractArray{Bool}) =
 
 function corrfn(image  :: AbstractArray{Bool},
                 cutoff :: Integer)
-    s2  = Directional.s2(image, false; periodic = true, len = cutoff) |> mean
-    #l2v = Directional.l2(image, false; periodic = true, len = cutoff) |> mean
-    #l2s = Directional.l2(image, true;  periodic = true, len = cutoff) |> mean
-
-    return vcat(s2)#, l2v, l2s)
+    return Directional.s2(image, false; periodic = true, len = cutoff) |> mean
 end
 
 function likelihood_point(x  :: AbstractFloat,
