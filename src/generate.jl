@@ -1,8 +1,3 @@
-function rand_non_negative(distribution)
-    r = rand(distribution)
-    return r < 0 ? rand_non_negative(distribution) : r
-end
-
 """
     generate_image(size, porosity, normal_param)
 
@@ -14,10 +9,7 @@ parameters `normal_param` in the form of `[(μ₀, σ₀), (μ₁, σ₁),
 function generate_image(size,
                         porosity     :: AbstractFloat,
                         normal_param :: AbstractVector{Tuple{T, T}}) where T <: AbstractFloat
-    radius_distribution = MixtureModel(Normal, normal_param)
-    # Truncated seems to be broken,
-    # see https://github.com/JuliaStats/Distributions.jl/issues/1501
-    #radius_distribution = Truncated(radius_distribution, 0, Inf)
+    radius_distribution = truncated(MixtureModel(Normal, normal_param), 0, Inf)
 
     image     = zeros(Bool, size) |> BitArray
     cur_pores = prod(size)
@@ -28,7 +20,7 @@ function generate_image(size,
     uidx       = oneunit(fidx)
 
     while true
-        radius  = rand_non_negative(radius_distribution)
+        radius  = rand(radius_distribution)
         iradius = radius |> ceil |> Int
         center  = rand(indices)
 
